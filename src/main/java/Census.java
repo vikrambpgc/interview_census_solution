@@ -41,6 +41,7 @@ public class Census {
             Map<Integer, Integer> frequencyMap = new HashMap<>();
             while (iterator.hasNext()) {
                 Integer key = iterator.next();
+                if (key < 0) continue;
                 frequencyMap.put(key, frequencyMap.getOrDefault(key, 0) + 1);
             }
 
