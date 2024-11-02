@@ -1,7 +1,8 @@
 import java.io.Closeable;
-import java.util.Iterator;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Implement the two methods below. We expect this class to be stateless and thread safe.
@@ -36,6 +37,33 @@ public class Census {
      * the 3 most common ages in the format specified by {@link #OUTPUT_FORMAT}.
      */
     public String[] top3Ages(String region) {
+        try (AgeInputIterator iterator = iteratorFactory.apply(region)) {
+            Map<Integer, Integer> frequencyMap = new HashMap<>();
+            while (iterator.hasNext()) {
+                Integer key = iterator.next();
+                frequencyMap.put(key, frequencyMap.getOrDefault(key, 0) + 1);
+            }
+
+            Map<Integer, Integer> sortedFrequencyMap = frequencyMap.entrySet().stream()
+                    .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue())) // descending
+                    .limit(3).collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (e1, e2) -> e1,
+                            LinkedHashMap::new
+                    ));
+
+            String[] result = new String[3];
+            int position = 1;
+            for (Map.Entry<Integer, Integer> entry : sortedFrequencyMap.entrySet()) {
+                result[position - 1] = String.format(OUTPUT_FORMAT, position, entry.getKey(), entry.getValue());
+                position++;
+            }
+            return result;
+        } catch (IOException e) {
+            return new String[]{};
+        }
+
 
 //        In the example below, the top three are ages 10, 15 and 12
 //        return new String[]{
@@ -44,7 +72,7 @@ public class Census {
 //                String.format(OUTPUT_FORMAT, 3, 12, 30)
 //        };
 
-        throw new UnsupportedOperationException();
+        // throw new UnsupportedOperationException();
     }
 
     /**
