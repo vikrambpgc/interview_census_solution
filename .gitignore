@@ -5,7 +5,7 @@
 *.iws
 
 # Gradle files
-# /build/
+/build/
 # /build.gradle
 # /gradle/
 # gradlew
