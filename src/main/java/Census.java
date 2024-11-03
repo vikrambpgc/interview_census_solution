@@ -1,3 +1,5 @@
+import org.checkerframework.checker.units.qual.A;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
@@ -45,23 +47,10 @@ public class Census {
                 if (key < 0) continue;
                 frequencyMap.put(key, frequencyMap.getOrDefault(key, 0) + 1);
             }
+            
+            Map<Integer, Integer> sortedFrequencyMap = sortByMapValue(frequencyMap);
 
-            Map<Integer, Integer> sortedFrequencyMap = frequencyMap.entrySet().stream()
-                    .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue())) // descending
-                    .limit(3).collect(Collectors.toMap(
-                            Map.Entry::getKey,
-                            Map.Entry::getValue,
-                            (e1, e2) -> e1,
-                            LinkedHashMap::new
-                    ));
-
-            String[] result = new String[3];
-            int position = 1;
-            for (Map.Entry<Integer, Integer> entry : sortedFrequencyMap.entrySet()) {
-                result[position - 1] = String.format(OUTPUT_FORMAT, position, entry.getKey(), entry.getValue());
-                position++;
-            }
-            return result;
+            return getTop3EntriesInOutputFormat(sortedFrequencyMap);
         } catch (IOException e) {
             return new String[]{};
         }
@@ -83,18 +72,29 @@ public class Census {
      * We expect you to make use of all cores in the machine, specified by {@link #CORES).
      */
     public String[] top3Ages(List<String> regionNames) {
-        System.out.println(regionNames);
         Map<Integer, Integer> finalMap = regionNames.stream().map((regionName) -> {
-            System.out.println(regionName);
+            AgeInputIterator iterator = null;
+            try {
+                iterator = iteratorFactory.apply(regionName);
+            } catch(Exception e) {
+                //Do nothing
+            }
+            return iterator;
+        }).filter(Objects::nonNull).map((iterator) -> {
+                    System.out.println(iterator);
             Map<Integer, Integer> frequencyMap = new HashMap<>();
-            try (AgeInputIterator iterator = iteratorFactory.apply(regionName)) {
+            try {
                 while (iterator.hasNext()) {
                     Integer key = iterator.next();
                     if (key < 0) continue;
                     frequencyMap.put(key, frequencyMap.getOrDefault(key, 0) + 1);
                 }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            } finally {
+                try {
+                    iterator.close();
+                } catch (IOException e) {
+                    //Do nothing
+                }
             }
 
             return frequencyMap;
@@ -108,22 +108,9 @@ public class Census {
                     return map1;
                 });
 
-        Map<Integer, Integer> sortedFrequencyMap = finalMap.entrySet().stream()
-                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue())) // descending
-                .limit(3).collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (e1, e2) -> e1,
-                        LinkedHashMap::new
-                ));
+        Map<Integer, Integer> sortedFrequencyMap = sortByMapValue(finalMap);
 
-        String[] result = new String[3];
-        int position = 1;
-        for (Map.Entry<Integer, Integer> entry : sortedFrequencyMap.entrySet()) {
-            result[position - 1] = String.format(OUTPUT_FORMAT, position, entry.getKey(), entry.getValue());
-            position++;
-        }
-        return result;
+        return getTop3EntriesInOutputFormat(sortedFrequencyMap);
 //        In the example below, the top three are ages 10, 15 and 12
 //        return new String[]{
 //                String.format(OUTPUT_FORMAT, 1, 10, 38),
@@ -132,6 +119,33 @@ public class Census {
 //        };
 
         //throw new UnsupportedOperationException();
+    }
+
+    private Map<Integer, Integer> sortByMapValue(Map<Integer, Integer> inputMap) {
+        return inputMap.entrySet().stream()
+                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue())) // descending
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
+    }
+
+    private String[] getTop3EntriesInOutputFormat(Map<Integer, Integer> sortedMap) {
+        List<String> resultList = new ArrayList<>();
+        int position = 0;
+        int prevTotal = -1;
+        for (Map.Entry<Integer, Integer> entry : sortedMap.entrySet()) {
+            if (entry.getValue() != prevTotal) {
+                position++;
+            }
+            if (position >= 4) break; // Only up to top 3 positions need to be returned.
+            resultList.add(String.format(OUTPUT_FORMAT, position, entry.getKey(), entry.getValue()));
+
+            prevTotal = entry.getValue();
+        }
+        return resultList.toArray(new String[0]);
     }
 
 
