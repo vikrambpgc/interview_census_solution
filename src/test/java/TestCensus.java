@@ -9,8 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestCensus {
     private static Function<String, Census.AgeInputIterator> factory = TestCensus::iteratorForRegion;
@@ -91,7 +90,7 @@ public class TestCensus {
                         .collect(Collectors.toList());
 
         String[] strings = Census.top3Ages(iterators.stream().map(e -> e.region).collect(Collectors.toList()));
-        assertTrue("Iterator hasn't been closed.", iterators.stream().anyMatch(e -> e.closed == false));
+        assertFalse("Iterator hasn't been closed.", iterators.stream().anyMatch(e -> e.closed == false));
         assertTrue("Invalid result null.", strings != null);
     }
 
@@ -103,7 +102,7 @@ public class TestCensus {
                         .collect(Collectors.toList());
 
         String[] strings = Census.top3Ages(Stream.concat(Stream.of("invalid"), iterators.stream().map(e -> e.region)).collect(Collectors.toList()));
-        assertTrue("Iterator hasn't been closed.", iterators.stream().anyMatch(e -> e.closed == false));
+        assertFalse("Iterator hasn't been closed.", iterators.stream().anyMatch(e -> e.closed == false));
         assertTrue("Invalid result null.", strings != null);
     }
 
@@ -122,7 +121,7 @@ public class TestCensus {
         });
 
         String[] strings = Census.top3Ages(Stream.concat(Stream.of("invalid"), iterators.stream().map(e -> e.region)).collect(Collectors.toList()));
-        assertTrue("Iterator hasn't been closed.", iterators.stream().anyMatch(e -> e.closed == false));
+        assertFalse("Iterator hasn't been closed.", iterators.stream().anyMatch(e -> e.closed == false));
         assertTrue("Invalid result null.", strings != null);
     }
 
@@ -134,7 +133,7 @@ public class TestCensus {
                         .collect(Collectors.toList());
 
         String[] strings = Census.top3Ages(iterators.stream().map(e -> e.region).collect(Collectors.toList()));
-        assertTrue("Iterator hasn't been closed.", iterators.stream().anyMatch(e -> e.closed == false));
+        assertFalse("Iterator hasn't been closed.", iterators.stream().anyMatch(e -> e.closed == false));
         assertTrue("Invalid result null.", strings != null);
         System.out.println(Arrays.toString(strings));
         assertArrayEquals(new String[]{"1:32=254", "2:53=217", "3:123=213"}, strings);
@@ -151,7 +150,7 @@ public class TestCensus {
                         .collect(Collectors.toList());
 
         String[] strings = Census.top3Ages(iterators.stream().map(e -> e.region).collect(Collectors.toList()));
-        assertTrue("Iterator hasn't been closed.", iterators.stream().anyMatch(e -> e.closed == false));
+        assertFalse("Iterator hasn't been closed.", iterators.stream().anyMatch(e -> e.closed == false));
         assertTrue("Invalid result null.", strings != null);
         System.out.println(Arrays.toString(strings));
         assertArrayEquals(new String[]{"1:0=2500", "1:1=2500", "1:2=2500", "2:3=2499"}, strings);
