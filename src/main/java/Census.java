@@ -40,30 +40,19 @@ public class Census {
      * the 3 most common ages in the format specified by {@link #OUTPUT_FORMAT}.
      */
     public String[] top3Ages(String region) {
-        try (AgeInputIterator iterator = iteratorFactory.apply(region)) {
-            Map<Integer, Integer> frequencyMap = new HashMap<>();
-            while (iterator.hasNext()) {
-                Integer key = iterator.next();
-                if (key < 0) continue;
-                frequencyMap.put(key, frequencyMap.getOrDefault(key, 0) + 1);
-            }
-            
+            Map<Integer, Integer> frequencyMap = getFrequencyMap(region);
             Map<Integer, Integer> sortedFrequencyMap = sortByMapValue(frequencyMap);
 
             return getTop3EntriesInOutputFormat(sortedFrequencyMap);
-        } catch (IOException e) {
-            return new String[]{};
-        }
 
+            //        In the example below, the top three are ages 10, 15 and 12
+            //        return new String[]{
+            //                String.format(OUTPUT_FORMAT, 1, 10, 38),
+            //                String.format(OUTPUT_FORMAT, 2, 15, 35),
+            //                String.format(OUTPUT_FORMAT, 3, 12, 30)
+            //        };
 
-//        In the example below, the top three are ages 10, 15 and 12
-//        return new String[]{
-//                String.format(OUTPUT_FORMAT, 1, 10, 38),
-//                String.format(OUTPUT_FORMAT, 2, 15, 35),
-//                String.format(OUTPUT_FORMAT, 3, 12, 30)
-//        };
-
-        // throw new UnsupportedOperationException();
+            // throw new UnsupportedOperationException();
     }
 
     /**
@@ -72,53 +61,45 @@ public class Census {
      * We expect you to make use of all cores in the machine, specified by {@link #CORES).
      */
     public String[] top3Ages(List<String> regionNames) {
-        Map<Integer, Integer> finalMap = regionNames.stream().map((regionName) -> {
-            AgeInputIterator iterator = null;
-            try {
-                iterator = iteratorFactory.apply(regionName);
-            } catch(Exception e) {
-                //Do nothing
-            }
-            return iterator;
-        }).filter(Objects::nonNull).map((iterator) -> {
-                    System.out.println(iterator);
-            Map<Integer, Integer> frequencyMap = new HashMap<>();
-            try {
-                while (iterator.hasNext()) {
-                    Integer key = iterator.next();
-                    if (key < 0) continue;
-                    frequencyMap.put(key, frequencyMap.getOrDefault(key, 0) + 1);
-                }
-            } finally {
-                try {
-                    iterator.close();
-                } catch (IOException e) {
-                    //Do nothing
-                }
-            }
-
-            return frequencyMap;
-        }).reduce(new HashMap<>(),
-                (map1, map2) -> {
-                    map2.forEach((key, value) -> map1.merge(key, value, Integer::sum));
-                    return map1;
-                },
-                (map1, map2) -> {
-                    map2.forEach((key, value) -> map1.merge(key, value, Integer::sum));
-                    return map1;
-                });
+        Map<Integer, Integer> finalMap = regionNames.stream()
+                .map(this::getFrequencyMap)
+                .reduce(new HashMap<>(),
+                    (map1, map2) -> {
+                        map2.forEach((key, value) -> map1.merge(key, value, Integer::sum));
+                        return map1;
+                    },
+                    (map1, map2) -> {
+                        map2.forEach((key, value) -> map1.merge(key, value, Integer::sum));
+                        return map1;
+                    });
 
         Map<Integer, Integer> sortedFrequencyMap = sortByMapValue(finalMap);
 
         return getTop3EntriesInOutputFormat(sortedFrequencyMap);
-//        In the example below, the top three are ages 10, 15 and 12
-//        return new String[]{
-//                String.format(OUTPUT_FORMAT, 1, 10, 38),
-//                String.format(OUTPUT_FORMAT, 2, 15, 35),
-//                String.format(OUTPUT_FORMAT, 3, 12, 30)
-//        };
+        //        In the example below, the top three are ages 10, 15 and 12
+        //        return new String[]{
+        //                String.format(OUTPUT_FORMAT, 1, 10, 38),
+        //                String.format(OUTPUT_FORMAT, 2, 15, 35),
+        //                String.format(OUTPUT_FORMAT, 3, 12, 30)
+        //        };
 
         //throw new UnsupportedOperationException();
+    }
+
+    private Map<Integer, Integer> getFrequencyMap(String region) {
+        Map<Integer, Integer> frequencyMap = new HashMap<>();
+        try (AgeInputIterator iterator = iteratorFactory.apply(region)) {
+            if (iterator == null) return frequencyMap;
+            while (iterator.hasNext()) {
+                Integer key = iterator.next();
+                if (key < 0) continue;
+                frequencyMap.put(key, frequencyMap.getOrDefault(key, 0) + 1);
+            }
+        } catch (Exception e) {
+            //Do nothing
+        }
+
+        return frequencyMap;
     }
 
     private Map<Integer, Integer> sortByMapValue(Map<Integer, Integer> inputMap) {
