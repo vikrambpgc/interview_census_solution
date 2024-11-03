@@ -92,6 +92,11 @@ public class Census {
         //throw new UnsupportedOperationException();
     }
 
+    /**
+     *
+     * @param region
+     * @return Age to Frequency/Total Map for a region
+     */
     private Map<Integer, Integer> getFrequencyMap(String region) {
         Map<Integer, Integer> frequencyMap = new HashMap<>();
         try (AgeInputIterator iterator = iteratorFactory.apply(region)) {
@@ -108,6 +113,11 @@ public class Census {
         return frequencyMap;
     }
 
+    /**
+     * Sort the given map by value in decreasing order
+     * @param inputMap
+     * @return
+     */
     private Map<Integer, Integer> sortByMapValue(Map<Integer, Integer> inputMap) {
         return inputMap.entrySet().stream()
                 .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue())) // descending
@@ -119,6 +129,12 @@ public class Census {
                 ));
     }
 
+    /**
+     * Returns the top 3 entries in a Map
+     * If two entries have same Values, they have the same rank/position
+     * @param sortedMap
+     * @return
+     */
     private String[] getTop3EntriesInOutputFormat(Map<Integer, Integer> sortedMap) {
         List<String> resultList = new ArrayList<>();
         int position = 0;
