@@ -4,6 +4,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -61,17 +63,21 @@ public class Census {
      * We expect you to make use of all cores in the machine, specified by {@link #CORES).
      */
     public String[] top3Ages(List<String> regionNames) {
-        Map<Integer, Integer> finalMap = regionNames.stream()
-                .map(this::getFrequencyMap)
-                .reduce(new HashMap<>(),
-                    (map1, map2) -> {
-                        map2.forEach((key, value) -> map1.merge(key, value, Integer::sum));
-                        return map1;
-                    },
-                    (map1, map2) -> {
-                        map2.forEach((key, value) -> map1.merge(key, value, Integer::sum));
-                        return map1;
-                    });
+        ForkJoinPool forkJoinPool = null;
+        Map<Integer, Integer> finalMap = null;
+        try {
+            // Custom Fork Join pool.
+            forkJoinPool = new ForkJoinPool(CORES);
+            finalMap = regionNames.parallelStream()
+                    .map(this::getFrequencyMap)
+                    .flatMap(map -> map.entrySet().stream())
+                    .collect(Collectors.groupingBy(Map.Entry::getKey,
+                            Collectors.summingInt(Map.Entry::getValue)));
+        } finally {
+            if (forkJoinPool != null) {
+                forkJoinPool.shutdown();
+            }
+        }
 
         Map<Integer, Integer> sortedFrequencyMap = sortByMapValue(finalMap);
 
